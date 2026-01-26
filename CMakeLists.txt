@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_executable(replay
     src/main.cpp
     src/market_data_loader.cpp
+    src/replay_engine.cpp
 )
 
 target_include_directories(replay PRIVATE include)
