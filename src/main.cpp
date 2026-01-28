@@ -2,6 +2,7 @@
 #include <vector>
 #include "market_data_loader.hpp"
 #include "order.hpp"
+#include "portfolio.hpp"
 #include "replay_engine.hpp"
 #include "strategy.hpp"
 #include "order_sink.hpp"
@@ -35,12 +36,14 @@ public:
 };
 int main() {
     std::vector<Tick> ticks = LoadTicksCsv("data/sample_ticks.csv");
-    MatchingEngine sink;
+    Portfolio  port;
+    MatchingEngine sink(port);
     ReplayEngine re;
     CountingStrategy cs;
     re.run(ticks, cs, sink);
     std::cout << "count: " << cs.count << std::endl;
     std::cout << "tick size: " << ticks.size() << std::endl;
     std::cout << "sink size: " << sink.size() << std::endl;
+    std::cout << "port cash:" << port.get_cash() << std::endl;
     return 0;
 }
