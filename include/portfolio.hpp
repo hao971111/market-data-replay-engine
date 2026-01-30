@@ -10,6 +10,12 @@ public:
     double get_cash() const {
         return cash;
     }
+    int64_t get_position() const {
+        return position;
+    }
+    double get_last_price() const {
+        return  last_price;
+    }
     void on_trade(const Trade& trade) {
         switch (trade.side) {
             case SideState::BUY :
@@ -23,5 +29,11 @@ public:
             default:
                 break;
         }
+    }
+    void update_to_market(double price) {
+        last_price = price;
+    }
+    double equity() const {
+        return cash + position * last_price;
     }
 };

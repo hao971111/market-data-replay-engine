@@ -44,6 +44,9 @@ int main() {
     std::cout << "count: " << cs.count << std::endl;
     std::cout << "tick size: " << ticks.size() << std::endl;
     std::cout << "sink size: " << sink.size() << std::endl;
-    std::cout << "port cash:" << port.get_cash() << std::endl;
+    std::cout << "port cash: " << port.get_cash() << std::endl;
+    std::cout << "port postion: " << port.get_position() << std::endl;
+    std::cout << "port last_price: " << port.get_last_price() << std::endl;
+    std::cout << "port equity: " << port.equity() << std::endl;
     return 0;
 }

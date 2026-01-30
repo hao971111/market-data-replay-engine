@@ -3,7 +3,6 @@
 #include "strategy.hpp"
 #include "tick.hpp"
 #include <vector>
-#include <functional>
 
 class ReplayEngine{
 public:
