@@ -5,7 +5,7 @@
 #include <limits>
 #include <iostream>
 
-void ReplayEngine::run(const std::vector<Tick> &ticks, Strategy& strategy, OrderSink& sink) {
+void ReplayEngine::run(const std::vector<Tick> &ticks, Strategy& strategy, OrderSink& sink, Portfolio &portfolio) {
     int64_t last_timestamp = std::numeric_limits<int64_t>::min();
     int event_index = 0;
     for(const Tick &t : ticks) {
@@ -16,6 +16,7 @@ void ReplayEngine::run(const std::vector<Tick> &ticks, Strategy& strategy, Order
             break;
         }   
         last_timestamp = t.timestamp_us;
+        portfolio.update_to_market(t.price);
         strategy.on_tick(t, sink);
     }
 }
