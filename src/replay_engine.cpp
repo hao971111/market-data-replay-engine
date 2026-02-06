@@ -16,7 +16,7 @@ void ReplayEngine::run(const std::vector<Tick> &ticks, Strategy& strategy, Order
             break;
         }   
         last_timestamp = t.timestamp_us;
-        portfolio.update_to_market(t.price);
+        portfolio.update_to_market(t.symbol,t.price);
         strategy.on_tick(t, sink);
     }
 }

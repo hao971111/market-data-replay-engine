@@ -50,8 +50,6 @@ int main() {
     std::cout << "tick size: " << ticks.size() << std::endl;
     std::cout << "trades size: " << sink.size() << std::endl;
     std::cout << "port cash: " << port.get_cash() << std::endl;
-    std::cout << "port postion: " << port.get_position() << std::endl;
-    std::cout << "port last_price: " << port.get_last_price() << std::endl;
     std::cout << "port equity: " << port.equity() << std::endl;
     std::cout << "pnl: " << port.equity() - 100000 << std::endl;
     auto duration = metrics.end_time - metrics.start_time;
@@ -61,4 +59,8 @@ int main() {
     metrics.trades_executed = sink.size();
     double eps = static_cast<double>(metrics.ticks_processed) / seconds;
     std::cout << "events_per_sec: " << eps << "\n";
+    std::cout << "TEST position: " << port.get_position_by_symbol("TEST") << std::endl;
+    std::cout << "TEST last_price: " << port.get_last_price_by_symbol("TEST") << std::endl;
+    std::cout << "ABC position: " << port.get_position_by_symbol("ABC") << std::endl;
+    std::cout << "ABC last_price: " << port.get_last_price_by_symbol("ABC") << std::endl;
 }
