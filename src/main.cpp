@@ -1,6 +1,8 @@
 #include <chrono>
+#include <cstdio>
 #include <iostream>
 #include <vector>
+#include "backtest_report.hpp"
 #include "market_data_loader.hpp"
 #include "order.hpp"
 #include "portfolio.hpp"
@@ -46,21 +48,21 @@ int main() {
     metrics.start_time = std::chrono::steady_clock::now();
     re.run(ticks, cs, sink, port);
     metrics.end_time = std::chrono::steady_clock::now();
-    std::cout << "count: " << cs.count << std::endl;
-    std::cout << "tick size: " << ticks.size() << std::endl;
-    std::cout << "trades size: " << sink.size() << std::endl;
-    std::cout << "port cash: " << port.get_cash() << std::endl;
-    std::cout << "port equity: " << port.equity() << std::endl;
-    std::cout << "pnl: " << port.equity() - 100000 << std::endl;
+    
     auto duration = metrics.end_time - metrics.start_time;
     double seconds = std::chrono::duration<double>(duration).count();
-    std::cout << "duration: " << seconds << "s"  <<std::endl;
     metrics.ticks_processed = ticks.size();
-    metrics.trades_executed = sink.size();
     double eps = static_cast<double>(metrics.ticks_processed) / seconds;
-    std::cout << "events_per_sec: " << eps << "\n";
-    std::cout << "TEST position: " << port.get_position_by_symbol("TEST") << std::endl;
-    std::cout << "TEST last_price: " << port.get_last_price_by_symbol("TEST") << std::endl;
-    std::cout << "ABC position: " << port.get_position_by_symbol("ABC") << std::endl;
-    std::cout << "ABC last_price: " << port.get_last_price_by_symbol("ABC") << std::endl;
+    
+    BacktestReport report;
+    report.ticks = ticks.size();
+    report.orders = sink.get_orders_received();
+    report.trades = sink.size();
+    report.initial_cash = 100000;
+    report.final_equity = port.equity();
+    report.pnl = port.equity() - report.initial_cash;
+    report.duration_seconds = seconds;
+    report.events_per_sec = eps;
+
+    std::cout << report << std::endl;
 }

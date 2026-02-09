@@ -9,4 +9,5 @@ void MatchingEngine::on_order(const Order& order) {
     trade.quantity = order.quantity;
     trades.push_back(trade);
     portfolio.on_trade(trade);
+    orders_received++;
 }
