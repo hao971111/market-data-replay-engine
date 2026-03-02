@@ -48,7 +48,8 @@ public:
 };
 
 int main(int argc, char** argv) {
-    std::vector<Tick> ticks = LoadTicksCsv("data/sample_ticks.csv");
+    SymbolTable symbol_table;
+    std::vector<Tick> ticks = LoadTicksCsv("data/sample_ticks.csv", symbol_table);
     ReplayEngine re;
 
     // 默认走功能回测；传 --bench 才做性能压测
@@ -105,7 +106,7 @@ int main(int argc, char** argv) {
 
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
-        const std::string version = "opt_symbol_id_v1";
+        const std::string version = "opt_symbol_id_v2_symbol_table";
         std::stringstream timestamp;
         timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
         file << version << "," << timestamp.str() << ","

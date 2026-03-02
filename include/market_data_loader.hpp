@@ -2,5 +2,5 @@
 #include <vector>
 #include <string>
 #include "tick.hpp"
-
-std::vector<Tick> LoadTicksCsv(const std::string& file_name);
+#include "symbol_table.hpp"
+std::vector<Tick> LoadTicksCsv(const std::string& file_name, SymbolTable& symbol_table);
