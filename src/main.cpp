@@ -1,6 +1,11 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <fstream>
+#include <filesystem>
+#include <iomanip>
+#include <sstream>
+#include <ctime>
 #include <iostream>
 #include <vector>
 #include <string>
@@ -23,7 +28,7 @@ public:
         if(count%2 == 0) {
             Order order;
             order.timestamp_us = tick.timestamp_us;
-            order.symbol = tick.symbol;
+            order.symbol_id = tick.symbol_id;
             order.side = SideState::BUY;
             order.quantity = 1;
             order.price = tick.price;
@@ -59,7 +64,7 @@ int main(int argc, char** argv) {
     BacktestReport report;
 
     if (bench) {
-        const int N = 100000;
+        const int N = 1000000;
 
         std::uint64_t total_ticks = 0;
         std::uint64_t total_trades = 0;
@@ -90,6 +95,30 @@ int main(int argc, char** argv) {
         report.orders_per_sec = ops;
 
         std::cout << report << std::endl;
+
+        std::string filename = "bench_results.csv";
+        bool file_exists = std::filesystem::exists(filename);
+        std::ofstream file(filename, std::ios::app);
+        if (!file_exists) {
+            file << "version,timestamp_iso,N,ticks,orders,trades,duration_seconds,ticks_per_sec,orders_per_sec\n";    
+        }
+
+        auto now = std::chrono::system_clock::now();
+        auto now_time_t = std::chrono::system_clock::to_time_t(now);
+        const std::string version = "opt_symbol_id_v1";
+        std::stringstream timestamp;
+        timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
+        file << version << "," << timestamp.str() << ","
+        << N << ","
+        << total_ticks << ","
+        << total_trades << ","
+        << total_trades << ","
+        << std::fixed << std::setprecision(6) << seconds << ","
+        << std::fixed << std::setprecision(2) << tps << ","
+        << std::fixed << std::setprecision(2) << ops << "\n";
+   
+        file.close();
+        std::cout << "Benchmark results appended to " << filename << std::endl;
         return 0;
     }
 

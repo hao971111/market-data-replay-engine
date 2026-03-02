@@ -7,7 +7,7 @@ enum class SideState {
 };
 struct Order{
     int64_t timestamp_us;
-    std::string symbol;
+    uint32_t symbol_id;
     SideState side;
     int32_t quantity;
     double price;

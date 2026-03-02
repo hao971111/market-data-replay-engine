@@ -1,11 +1,16 @@
 #include "market_data_loader.hpp"
 #include "tick.hpp"
 #include <cstddef>
+#include <cstdint>
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <unordered_map>
 std::vector<Tick> LoadTicksCsv(const std::string& file_name){
+    std::unordered_map<std::string, uint32_t> symbol_to_id;//TODO: extract the map into SymbolTable class
+    uint32_t next_id = 0;
+
     std::vector<Tick> ticks;
     std::ifstream file(file_name);
     if(!file.is_open()){
@@ -25,6 +30,10 @@ std::vector<Tick> LoadTicksCsv(const std::string& file_name){
         std::getline(ss, symbol, ',');
         std::getline(ss, price_str, ',');
         std::getline(ss, volume_str, ',');
+        if(symbol_to_id.find(symbol) == symbol_to_id.end()) {
+            symbol_to_id[symbol] = next_id++;
+        }
+        uint32_t symbol_id = symbol_to_id[symbol];
         try {
             std::size_t pos = 0;
             int64_t timestamp_us = std::stoll(timestamp_us_str, &pos);
@@ -41,7 +50,7 @@ std::vector<Tick> LoadTicksCsv(const std::string& file_name){
             if (pos != volume_str.size()) {
                 throw std::invalid_argument("");
             }
-            ticks.emplace_back(timestamp_us, symbol, price, volume);
+            ticks.emplace_back(timestamp_us, symbol_id, price, volume);
         } catch (...) {
             if(line.find("timestamp") == std::string::npos &&
                line.find("symbol") == std::string::npos && 

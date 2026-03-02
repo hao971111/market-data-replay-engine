@@ -3,7 +3,7 @@
 void MatchingEngine::on_order(const Order& order) {
     Trade trade;
     trade.timestamp_us = order.timestamp_us;
-    trade.symbol = order.symbol;
+    trade.symbol_id = order.symbol_id;
     trade.side = order.side;
     trade.price = order.price;
     trade.quantity = order.quantity;

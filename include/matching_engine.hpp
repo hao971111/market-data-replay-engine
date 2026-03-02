@@ -10,7 +10,9 @@ class MatchingEngine : public OrderSink {
     std::vector<Trade> trades;
     Portfolio &portfolio;
 public:
-    explicit MatchingEngine(Portfolio &port) : portfolio(port){}
+    explicit MatchingEngine(Portfolio &port) : portfolio(port){
+        orders_received = 0;
+    }
     void on_order(const Order& order) override;
     size_t size() {return trades.size();}
     std::uint64_t get_orders_received() {
