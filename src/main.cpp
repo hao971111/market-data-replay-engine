@@ -65,6 +65,7 @@ int main(int argc, char** argv) {
     BacktestReport report;
 
     if (bench) {
+        ReplayPhaseStats total_phase{};
         const int N = 1000000;
 
         std::uint64_t total_ticks = 0;
@@ -72,13 +73,19 @@ int main(int argc, char** argv) {
 
         metrics.start_time = std::chrono::steady_clock::now();
         for (int i = 0; i < N; ++i) {
+            ReplayPhaseStats phase{};
             Portfolio port(100000);
             MatchingEngine sink(port);
             CountingStrategy cs;
 
-            re.run(ticks, cs, sink, port);
+            re.run(ticks, cs, sink, port,&phase);
             total_ticks += ticks.size();
             total_trades += sink.size();
+
+            total_phase.market_update_ns += phase.market_update_ns;
+            total_phase.strategy_ns += phase.strategy_ns;
+            total_phase.events += phase.events;
+            total_phase.sampled_events += phase.sampled_events;
         }
         metrics.end_time = std::chrono::steady_clock::now();
 
@@ -106,7 +113,7 @@ int main(int argc, char** argv) {
 
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
-        const std::string version = "opt_symbol_id_v2_symbol_table";
+        const std::string version = "opt_v3_remove_trade_vector";
         std::stringstream timestamp;
         timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
         file << version << "," << timestamp.str() << ","
@@ -117,7 +124,15 @@ int main(int argc, char** argv) {
         << std::fixed << std::setprecision(6) << seconds << ","
         << std::fixed << std::setprecision(2) << tps << ","
         << std::fixed << std::setprecision(2) << ops << "\n";
-   
+        double market_ns = static_cast<double>(total_phase.market_update_ns.count());
+        double strategy_ns = static_cast<double>(total_phase.strategy_ns.count());
+        double phase_total_ns = market_ns + strategy_ns;
+        auto market_pct = phase_total_ns > 0 ? 100.0 * market_ns/phase_total_ns : 0.0;
+        auto strategy_pct  = phase_total_ns > 0 ? 100.0 * strategy_ns/phase_total_ns : 0.0;
+        double avg_strategy_ns_per_event = total_phase.sampled_events > 0 ? strategy_ns/total_phase.sampled_events : 0.0;
+        std::cout << "market%: " << market_pct << std::endl;
+        std::cout << "strategy%: " <<strategy_pct << std::endl;
+        std::cout << "avg_strategy_ns_per_event: " << avg_strategy_ns_per_event << std::endl;
         file.close();
         std::cout << "Benchmark results appended to " << filename << std::endl;
         return 0;

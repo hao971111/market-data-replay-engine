@@ -7,7 +7,7 @@ void MatchingEngine::on_order(const Order& order) {
     trade.side = order.side;
     trade.price = order.price;
     trade.quantity = order.quantity;
-    trades.push_back(trade);
     portfolio.on_trade(trade);
+    trades_count++;
     orders_received++;
 }
