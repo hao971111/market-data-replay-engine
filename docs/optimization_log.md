@@ -22,3 +22,22 @@
 - Removed `vector<Trade>` from `MatchingEngine` hot path, kept trade count + `portfolio.on_trade`.
 - Improvement: median `ticks_per_sec` increased from `1.16e7` to `1.57e7` (**+35.3%**).
 - Next: optimize replay/matching loop further.
+
+## 2026-03-14 - Opt #4 (replay split stats path): no clear throughput gain vs v3 (median ~15.44M vs ~15.68M).
+
+## 2026-03-14 - Benchmark Method Update (fixed total events)
+- Changed benchmark method to fixed total events: `TARGET_TOTAL_EVENTS = 1e9` with expanded input (`target_ticks = 100000`).
+- Comparison baseline is now runs with `N=10000` and total `ticks=1,000,000,000` (ignore older runs with different total work).
+- Current stable baseline (`opt_v3_with_100k_bench_input`): ~`1.36e8` to `1.39e8` ticks/sec.
+
+## Current Throughput Baseline
+- Baseline version: `opt_v3_throughput_clean`
+- Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`)
+- Baseline performance (3 runs): median `ticks_per_sec = 1.642e8`
+
+## 2026-03-14 - Opt #5 (on_order_fill no temporary trade object)
+
+- Change: in `MatchingEngine::on_order`, removed temporary `Trade` construction and call `portfolio.on_order_fill(order)` directly.
+- Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`).
+- Result (`opt_v3_1_on_order_fill_no_trade_obj`, 5 runs): `ticks_per_sec` range `1.696e8 ~ 1.745e8`, median `1.713e8`.
+- Improvement: vs previous clean baseline (`opt_v3_throughput_clean` median `1.642e8`), throughput improved by **~4.3%**.

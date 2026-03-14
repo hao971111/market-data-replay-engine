@@ -42,6 +42,20 @@ public:
                 break;
         }
     }
+    void on_order_fill(const Order& order) {
+        switch (order.side) {
+            case SideState::BUY:
+                position_[order.symbol_id] += order.quantity;
+                cash_ -= order.quantity * order.price;
+                break;
+            case SideState::SELL:
+                position_[order.symbol_id] -= order.quantity;
+                cash_ += order.quantity * order.price;
+                break;
+            default:
+                break;
+        }
+    }
     void update_to_market(uint32_t symbol_id, double price) {
         last_price_[symbol_id] = price;
     }

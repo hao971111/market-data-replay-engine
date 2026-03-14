@@ -19,7 +19,7 @@
 #include "matching_engine.hpp"
 #include "metrics.hpp"
 
-const int N = 100000;
+const int TARGET_TOTAL_EVENTS = 1000000000;
 class CountingStrategy : public Strategy {
 public:
     int count = 0;
@@ -49,7 +49,8 @@ public:
 
 int main(int argc, char** argv) {
     SymbolTable symbol_table;
-    std::vector<Tick> ticks = LoadTicksCsv("data/sample_ticks.csv", symbol_table);
+    std::vector<Tick> base_ticks = LoadTicksCsv("data/sample_ticks.csv", symbol_table);
+    std::vector<Tick> ticks = base_ticks;
     ReplayEngine re;
 
     // 默认走功能回测；传 --bench 才做性能压测
@@ -65,20 +66,44 @@ int main(int argc, char** argv) {
     BacktestReport report;
 
     if (bench) {
-        ReplayPhaseStats total_phase{};
-        const int N = 1000000;
 
+        const std::size_t target_ticks = 100000;
+        if (base_ticks.empty()) {
+            std::cerr << "no ticks loaded\n";
+            return 1;
+        }
+
+        const int64_t first_ts = base_ticks.front().timestamp_us;
+        const int64_t last_ts  = base_ticks.back().timestamp_us;
+        const int64_t chunk_span = (last_ts - first_ts + 1);
+
+        ticks.clear();
+        ticks.reserve(target_ticks);
+
+        int64_t chunk_offset = 0;
+        while (ticks.size() < target_ticks) {
+            for (const Tick& t : base_ticks) {
+                Tick copy = t;
+                copy.timestamp_us += chunk_offset;
+                ticks.push_back(copy);
+                if (ticks.size() >= target_ticks) break;
+            }
+            chunk_offset += chunk_span;
+        }
+
+        ReplayPhaseStats total_phase{};
         std::uint64_t total_ticks = 0;
         std::uint64_t total_trades = 0;
 
         metrics.start_time = std::chrono::steady_clock::now();
+        const int N = std::max<int>(1, TARGET_TOTAL_EVENTS / static_cast<int>(ticks.size()));
         for (int i = 0; i < N; ++i) {
             ReplayPhaseStats phase{};
             Portfolio port(100000);
             MatchingEngine sink(port);
             CountingStrategy cs;
 
-            re.run(ticks, cs, sink, port,&phase);
+            re.run(ticks, cs, sink, port,nullptr);
             total_ticks += ticks.size();
             total_trades += sink.size();
 
@@ -113,7 +138,7 @@ int main(int argc, char** argv) {
 
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
-        const std::string version = "opt_v3_remove_trade_vector";
+        const std::string version = "opt_v3_1_on_order_fill_no_trade_obj";
         std::stringstream timestamp;
         timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
         file << version << "," << timestamp.str() << ","
