@@ -41,3 +41,9 @@
 - Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`).
 - Result (`opt_v3_1_on_order_fill_no_trade_obj`, 5 runs): `ticks_per_sec` range `1.696e8 ~ 1.745e8`, median `1.713e8`.
 - Improvement: vs previous clean baseline (`opt_v3_throughput_clean` median `1.642e8`), throughput improved by **~4.3%**.
+
+## 2026-03-15 - Opt #6 (devirtualized hot path)
+
+- Change: added `run_fast<StrategyT, SinkT>()`; bench uses concrete `FastCountingStrategy` + `MatchingEngine`.
+- Result (`opt_v3_3_devirtualized_hot_path`, 5 runs): median `ticks_per_sec = 1.937e8`.
+- Improvement: vs `opt_v3_1` baseline (`1.713e8`), **~+13.1%**.

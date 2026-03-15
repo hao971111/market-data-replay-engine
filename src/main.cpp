@@ -47,10 +47,27 @@ public:
     }
 };
 
+class FastCountingStrategy {
+public:
+    int count = 0;
+    void on_tick(const Tick& tick, MatchingEngine& sink) {
+        count++;
+        if (count % 2 == 0) {
+            Order order;
+            order.timestamp_us = tick.timestamp_us;
+            order.symbol_id = tick.symbol_id;
+            order.side = SideState::BUY;
+            order.quantity = 1;
+            order.price = tick.price;
+            sink.on_order(order);
+        }
+    }
+};
+
 int main(int argc, char** argv) {
     SymbolTable symbol_table;
-    std::vector<Tick> base_ticks = LoadTicksCsv("data/sample_ticks.csv", symbol_table);
-    std::vector<Tick> ticks = base_ticks;
+    std::vector<Tick> base_ticks;
+    std::vector<Tick> ticks;
     ReplayEngine re;
 
     // 默认走功能回测；传 --bench 才做性能压测
@@ -67,11 +84,27 @@ int main(int argc, char** argv) {
 
     if (bench) {
 
-        const std::size_t target_ticks = 100000;
+        const std::string csv_path = "data/sample_ticks.csv";
+        const std::string bin_path = "data/sample_ticks.bin";
+
+        if (!std::filesystem::exists(bin_path)) {
+            base_ticks = LoadTicksCsv(csv_path, symbol_table);
+            if (base_ticks.empty()) {
+                std::cerr << "no ticks loaded from csv\n";
+                return 1;
+            }
+            if (!SaveTicksBin(bin_path, base_ticks)) {
+                std::cerr << "failed to save bin file\n";
+                return 1;
+            }
+        }
+
+        base_ticks = LoadTicksBin(bin_path, symbol_table);
         if (base_ticks.empty()) {
-            std::cerr << "no ticks loaded\n";
+            std::cerr << "no ticks loaded from bin\n";
             return 1;
         }
+        const std::size_t target_ticks = 100000;
 
         const int64_t first_ts = base_ticks.front().timestamp_us;
         const int64_t last_ts  = base_ticks.back().timestamp_us;
@@ -101,9 +134,11 @@ int main(int argc, char** argv) {
             ReplayPhaseStats phase{};
             Portfolio port(100000);
             MatchingEngine sink(port);
-            CountingStrategy cs;
+            // CountingStrategy cs;
 
-            re.run(ticks, cs, sink, port,nullptr);
+            // re.run(ticks, cs, sink, port,nullptr);
+            FastCountingStrategy cs;
+            re.run_fast(ticks, cs, sink, port);
             total_ticks += ticks.size();
             total_trades += sink.size();
 
@@ -138,7 +173,7 @@ int main(int argc, char** argv) {
 
         auto now = std::chrono::system_clock::now();
         auto now_time_t = std::chrono::system_clock::to_time_t(now);
-        const std::string version = "opt_v3_1_on_order_fill_no_trade_obj";
+        const std::string version = "opt_v3_3_devirtualized_hot_path";
         std::stringstream timestamp;
         timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
         file << version << "," << timestamp.str() << ","
@@ -164,6 +199,12 @@ int main(int argc, char** argv) {
     }
 
     // --bt：只跑 1 次，输出 pnl/equity
+
+    ticks = LoadTicksCsv("data/sample_ticks.csv", symbol_table);
+    if (ticks.empty()) {
+        std::cerr << "no ticks loaded from csv\n";
+        return 1;
+    }
     const double initial_cash = 100000.0;
     Portfolio port(initial_cash);
     MatchingEngine sink(port);
