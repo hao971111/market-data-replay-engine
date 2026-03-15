@@ -8,7 +8,6 @@
 #include <vector>
 #include <chrono>
 #include "portfolio.hpp"
-
 struct ReplayPhaseStats {
     uint64_t sampled_events = 0;
     uint64_t events = 0;

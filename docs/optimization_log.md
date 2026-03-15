@@ -47,3 +47,17 @@
 - Change: added `run_fast<StrategyT, SinkT>()`; bench uses concrete `FastCountingStrategy` + `MatchingEngine`.
 - Result (`opt_v3_3_devirtualized_hot_path`, 5 runs): median `ticks_per_sec = 1.937e8`.
 - Improvement: vs `opt_v3_1` baseline (`1.713e8`), **~+13.1%**.
+
+## 2026-03-15 - Opt #7 (SoA tick store)
+
+- Change: added `TickStore` (SoA) and `run_fast_soa()` for bench path.
+- Result (`opt_v3_4_soa_tick_store`, 5 runs): median `ticks_per_sec = 1.922e8`.
+- Improvement: vs `opt_v3_3_devirtualized_hot_path` baseline (`1.942e8`), no gain (**~ -1.0%**).
+- Next: remove temporary `Tick` reconstruction in hot path.
+
+## 2026-03-15 - Opt #8 (SoA direct fields)
+
+- Change: extended SoA bench path by removing temporary `Tick` reconstruction and calling strategy with direct fields.
+- Result (`opt_v3_5_soa_direct_fields`, 5 runs): median `ticks_per_sec = 1.899e8`.
+- Improvement: vs `opt_v3_3_devirtualized_hot_path` baseline (`1.942e8`), throughput decreased by **~2.2%**.
+- Conclusion: under current workload, SoA path did not outperform AoS hot path.
