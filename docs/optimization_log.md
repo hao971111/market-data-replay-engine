@@ -76,3 +76,12 @@
 - Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`).
 - Result (`opt_v3_6_portfolio_vector`, 5 runs): median `ticks_per_sec = 3.214e8`.
 - Improvement: vs `opt_v3_3_devirtualized_hot_path` baseline (`1.942e8`), throughput improved by **~65.5%**.
+
+## 2026-03-15 - Opt #10 (inline matching engine hot path)
+
+- Change: moved `MatchingEngine::on_order` implementation into header to make the hot path easier to inline.
+- Why: after portfolio vector optimization, Linux `perf report` showed `MatchingEngine::on_order` as the new top hotspot.
+- Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`).
+- Result (`opt_v3_7_inline_matching_engine`, 5 runs): median `ticks_per_sec = 7.356e8`.
+- Improvement: vs `opt_v3_6_portfolio_vector` baseline (`3.214e8`), throughput improved by **~128.9%**.
+- Note: next step is to verify whether the previous call was eliminated via assembly comparison on Linux.
