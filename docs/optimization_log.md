@@ -61,3 +61,10 @@
 - Result (`opt_v3_5_soa_direct_fields`, 5 runs): median `ticks_per_sec = 1.899e8`.
 - Improvement: vs `opt_v3_3_devirtualized_hot_path` baseline (`1.942e8`), throughput decreased by **~2.2%**.
 - Conclusion: under current workload, SoA path did not outperform AoS hot path.
+
+## 2026-03-15 - Profiling Run #3 (Linux perf report)
+
+- Ran `perf report` on Linux benchmark build.
+- Hotspots: `main` ~53% (likely inlined hot loop), `std::__detail::_Map_base...` ~30%, `MatchingEngine::on_order` ~17%.
+- Finding: `unordered_map` access in portfolio path is a major hotspot.
+- Next: replace portfolio `unordered_map` with direct-indexed `vector`.
