@@ -68,3 +68,11 @@
 - Hotspots: `main` ~53% (likely inlined hot loop), `std::__detail::_Map_base...` ~30%, `MatchingEngine::on_order` ~17%.
 - Finding: `unordered_map` access in portfolio path is a major hotspot.
 - Next: replace portfolio `unordered_map` with direct-indexed `vector`.
+
+## 2026-03-15 - Opt #9 (portfolio unordered_map -> vector)
+
+- Change: replaced `Portfolio` state storage from `unordered_map<uint32_t, ...>` to direct-indexed `std::vector` by `symbol_id`.
+- Why: Linux `perf report` showed hash map access as a major hotspot in portfolio path.
+- Benchmark setup: fixed workload (`TARGET_TOTAL_EVENTS=1e9`, `target_ticks=100000`, `N=10000`).
+- Result (`opt_v3_6_portfolio_vector`, 5 runs): median `ticks_per_sec = 3.214e8`.
+- Improvement: vs `opt_v3_3_devirtualized_hot_path` baseline (`1.942e8`), throughput improved by **~65.5%**.
