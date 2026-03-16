@@ -20,4 +20,5 @@ cmake --build build -j
 
 ```powershell
 .\build\replay.exe
+benchmark: .\build\replay.exe --bench
 ```
