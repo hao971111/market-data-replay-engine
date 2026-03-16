@@ -47,6 +47,7 @@ public:
     }
 };
 
+
 class FastCountingStrategy {
 public:
     int count = 0;
@@ -64,9 +65,87 @@ public:
     }
 };
 
+std::vector<Tick> prepare_bench_ticks(SymbolTable& symbol_table) {
+    std::vector<Tick> base_ticks;
+    std::vector<Tick> ticks;
+
+    const std::string csv_path = "data/sample_ticks.csv";
+    const std::string bin_path = "data/sample_ticks.bin";
+
+    if (!std::filesystem::exists(bin_path)) {
+        base_ticks = LoadTicksCsv(csv_path, symbol_table);
+        if (base_ticks.empty()) {
+            std::cerr << "no ticks loaded from csv\n";
+            return {};
+        }
+        if (!SaveTicksBin(bin_path, base_ticks)) {
+            std::cerr << "failed to save bin file\n";
+            return {};
+        }
+    }
+
+    base_ticks = LoadTicksBin(bin_path, symbol_table);
+    if (base_ticks.empty()) {
+        std::cerr << "no ticks loaded from bin\n";
+        return {};
+    }
+
+    const std::size_t target_ticks = 100000;
+
+    const int64_t first_ts = base_ticks.front().timestamp_us;
+    const int64_t last_ts = base_ticks.back().timestamp_us;
+    const int64_t chunk_span = (last_ts - first_ts + 1);
+
+    ticks.reserve(target_ticks);
+
+    int64_t chunk_offset = 0;
+    while (ticks.size() < target_ticks) {
+        for (const Tick& t : base_ticks) {
+            Tick copy = t;
+            copy.timestamp_us += chunk_offset;
+            ticks.push_back(copy);
+            if (ticks.size() >= target_ticks) {
+                break;
+            }
+        }
+        chunk_offset += chunk_span;
+    }
+
+    return ticks;
+}
+
+void print_and_save_bench_result(const BacktestReport& report,
+                                 int N,
+                                 const std::string& version) {
+    std::cout << report << std::endl;
+
+    const std::string filename = "bench_results.csv";
+    const bool file_exists = std::filesystem::exists(filename);
+    std::ofstream file(filename, std::ios::app);
+
+    if (!file_exists) {
+        file << "version,timestamp_iso,N,ticks,orders,trades,duration_seconds,ticks_per_sec,orders_per_sec\n";
+    }
+
+    auto now = std::chrono::system_clock::now();
+    auto now_time_t = std::chrono::system_clock::to_time_t(now);
+    std::stringstream timestamp;
+    timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
+
+    file << version << "," << timestamp.str() << ","
+         << N << ","
+         << report.ticks << ","
+         << report.orders << ","
+         << report.trades << ","
+         << std::fixed << std::setprecision(6) << report.duration_seconds << ","
+         << std::fixed << std::setprecision(2) << report.ticks_per_sec << ","
+         << std::fixed << std::setprecision(2) << report.orders_per_sec << "\n";
+
+    file.close();
+    std::cout << "Benchmark results appended to " << filename << std::endl;
+}
 int main(int argc, char** argv) {
     SymbolTable symbol_table;
-    std::vector<Tick> base_ticks;
     std::vector<Tick> ticks;
     ReplayEngine re;
 
@@ -84,46 +163,10 @@ int main(int argc, char** argv) {
 
     if (bench) {
 
-        const std::string csv_path = "data/sample_ticks.csv";
-        const std::string bin_path = "data/sample_ticks.bin";
-
-        if (!std::filesystem::exists(bin_path)) {
-            base_ticks = LoadTicksCsv(csv_path, symbol_table);
-            if (base_ticks.empty()) {
-                std::cerr << "no ticks loaded from csv\n";
-                return 1;
-            }
-            if (!SaveTicksBin(bin_path, base_ticks)) {
-                std::cerr << "failed to save bin file\n";
-                return 1;
-            }
-        }
-
-        base_ticks = LoadTicksBin(bin_path, symbol_table);
-        if (base_ticks.empty()) {
-            std::cerr << "no ticks loaded from bin\n";
+        ticks = prepare_bench_ticks(symbol_table);
+        if(ticks.empty()) {
             return 1;
         }
-        const std::size_t target_ticks = 100000;
-
-        const int64_t first_ts = base_ticks.front().timestamp_us;
-        const int64_t last_ts  = base_ticks.back().timestamp_us;
-        const int64_t chunk_span = (last_ts - first_ts + 1);
-
-        ticks.clear();
-        ticks.reserve(target_ticks);
-
-        int64_t chunk_offset = 0;
-        while (ticks.size() < target_ticks) {
-            for (const Tick& t : base_ticks) {
-                Tick copy = t;
-                copy.timestamp_us += chunk_offset;
-                ticks.push_back(copy);
-                if (ticks.size() >= target_ticks) break;
-            }
-            chunk_offset += chunk_span;
-        }
-
         ReplayPhaseStats total_phase{};
         std::uint64_t total_ticks = 0;
         std::uint64_t total_trades = 0;
@@ -162,39 +205,8 @@ int main(int argc, char** argv) {
         report.ticks_per_sec = tps;
         report.orders_per_sec = ops;
 
-        std::cout << report << std::endl;
-
-        std::string filename = "bench_results.csv";
-        bool file_exists = std::filesystem::exists(filename);
-        std::ofstream file(filename, std::ios::app);
-        if (!file_exists) {
-            file << "version,timestamp_iso,N,ticks,orders,trades,duration_seconds,ticks_per_sec,orders_per_sec\n";    
-        }
-
-        auto now = std::chrono::system_clock::now();
-        auto now_time_t = std::chrono::system_clock::to_time_t(now);
         const std::string version = "opt_v3_7_inline_matching_engine";
-        std::stringstream timestamp;
-        timestamp << std::put_time(std::localtime(&now_time_t), "%Y-%m-%d %H:%M:%S");
-        file << version << "," << timestamp.str() << ","
-        << N << ","
-        << total_ticks << ","
-        << total_trades << ","
-        << total_trades << ","
-        << std::fixed << std::setprecision(6) << seconds << ","
-        << std::fixed << std::setprecision(2) << tps << ","
-        << std::fixed << std::setprecision(2) << ops << "\n";
-        double market_ns = static_cast<double>(total_phase.market_update_ns.count());
-        double strategy_ns = static_cast<double>(total_phase.strategy_ns.count());
-        double phase_total_ns = market_ns + strategy_ns;
-        auto market_pct = phase_total_ns > 0 ? 100.0 * market_ns/phase_total_ns : 0.0;
-        auto strategy_pct  = phase_total_ns > 0 ? 100.0 * strategy_ns/phase_total_ns : 0.0;
-        double avg_strategy_ns_per_event = total_phase.sampled_events > 0 ? strategy_ns/total_phase.sampled_events : 0.0;
-        std::cout << "market%: " << market_pct << std::endl;
-        std::cout << "strategy%: " <<strategy_pct << std::endl;
-        std::cout << "avg_strategy_ns_per_event: " << avg_strategy_ns_per_event << std::endl;
-        file.close();
-        std::cout << "Benchmark results appended to " << filename << std::endl;
+        print_and_save_bench_result(report, N, version);
         return 0;
     }
 
