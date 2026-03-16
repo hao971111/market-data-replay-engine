@@ -85,3 +85,12 @@
 - Result (`opt_v3_7_inline_matching_engine`, 5 runs): median `ticks_per_sec = 7.356e8`.
 - Improvement: vs `opt_v3_6_portfolio_vector` baseline (`3.214e8`), throughput improved by **~128.9%**.
 - Note: next step is to verify whether the previous call was eliminated via assembly comparison on Linux.
+
+
+## 2026-03-16 - Opt #11 (first sharded parallel prototype)
+
+- Change: added first sharded parallel bench prototype by partitioning ticks by `symbol_id % shard_count` and running each shard on a separate thread.
+- Result (`opt_v4_0_parallel_sharded_replay`, 5 runs): median `ticks_per_sec = 3.941e8`.
+- Improvement: vs `opt_v3_7_inline_matching_engine` baseline (`7.356e8`), throughput decreased by **~46.4%**.
+- Analysis: this prototype creates and joins worker threads inside each benchmark iteration, so thread management overhead dominates and outweighs parallel execution benefit.
+- Next: move thread creation outside the `N` loop and let each worker process its shard repeatedly.
