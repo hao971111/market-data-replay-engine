@@ -71,8 +71,11 @@ std::vector<Tick> prepare_bench_ticks(SymbolTable& symbol_table) {
     std::vector<Tick> base_ticks;
     std::vector<Tick> ticks;
 
-    const std::string csv_path = "data/sample_ticks.csv";
-    const std::string bin_path = "data/sample_ticks.bin";
+    // const std::string csv_path = "data/sample_ticks.csv";
+    // const std::string bin_path = "data/sample_ticks.bin";
+
+    const std::string csv_path = "data/parallel_ticks.csv";
+    const std::string bin_path = "data/parallel_ticks.bin";
 
     if (!std::filesystem::exists(bin_path)) {
         base_ticks = LoadTicksCsv(csv_path, symbol_table);

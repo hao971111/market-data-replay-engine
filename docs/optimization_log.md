@@ -101,5 +101,11 @@
 - Change: moved thread creation outside the benchmark loop; each worker thread is created once and repeatedly processes its own shard for `N` iterations.
 - Result (`opt_v4_1_parallel_persistent_workers`, 5 runs): median `ticks_per_sec = 1.017e9`.
 - Improvement: vs `opt_v4_0_parallel_sharded_replay` baseline (`3.941e8`), throughput improved by **~158%**.
-- Improvement: vs `opt_v3_7_inline_matching_engine` single-thread baseline (`7.356e8`), throughput improved by **~38%**.
+- Improvement: vs `opt_v3_7_inline_matching_engine` single-thread baseline (`7.356e8`), throughput improved by **~38%**.(Only 38% faster than single-threaded — needs further investigation.)
 - Analysis: the first parallel prototype was dominated by per-iteration thread creation/join overhead; persistent workers removed that overhead and made parallel replay beneficial.
+
+## 2026-03-18 - Parallel Scaling Note
+
+- Observation: parallel persistent workers improved throughput by only ~38% vs the single-thread baseline.
+- Cause: shard distribution on the current benchmark input was highly imbalanced (`75000 / 25000 / 0 / 0`), so only part of the workers received useful work.
+- Next: use a more balanced multi-symbol dataset for parallel scaling evaluation.
