@@ -184,37 +184,41 @@ int main(int argc, char** argv) {
 
         metrics.start_time = std::chrono::steady_clock::now();
         const int N = std::max<int>(1, TARGET_TOTAL_EVENTS / static_cast<int>(ticks.size()));
-        for (int i = 0; i < N; ++i) {
-            uint64_t loop_trades = 0;
-            uint64_t loop_ticks = 0;
 
-            std::vector<std::thread> threads;
-            std::vector<uint64_t> shard_trades(shard_ticks.size(), 0);
-            std::vector<uint64_t> shard_ticks_count(shard_ticks.size(), 0);
-
-            for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
-                threads.emplace_back([&, s]() {
-                    Portfolio port(100000);
-                    MatchingEngine sink(port);
-                    FastCountingStrategy cs;
-                
+        std::vector<std::thread> threads;
+        std::vector<uint64_t> shard_trades(shard_ticks.size(), 0);
+        std::vector<uint64_t> shard_ticks_count(shard_ticks.size(), 0);
+        
+        for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
+            threads.emplace_back([&, s]() {
+                Portfolio port(100000);
+                MatchingEngine sink(port);
+                FastCountingStrategy cs;
+        
+                uint64_t local_trades = 0;
+                uint64_t local_ticks = 0;
+        
+                for (int i = 0; i < N; ++i) {
+                    uint64_t before = sink.size();
                     re.run_fast(shard_ticks[s], cs, sink, port);
-                
-                    shard_trades[s] = sink.size();
-                    shard_ticks_count[s] = shard_ticks[s].size();
-                });
-            }
-
-            for (auto& t : threads) {
-                t.join();
-            }
-
-            for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
-                loop_trades += shard_trades[s];
-                loop_ticks += shard_ticks_count[s];
-            }
-            total_ticks += loop_ticks;
-            total_trades += loop_trades;
+                    uint64_t after = sink.size();
+        
+                    local_trades += (after - before);
+                    local_ticks += shard_ticks[s].size();
+                }
+        
+                shard_trades[s] = local_trades;
+                shard_ticks_count[s] = local_ticks;
+            });
+        }
+        
+        for (auto& t : threads) {
+            t.join();
+        }
+        
+        for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
+            total_trades += shard_trades[s];
+            total_ticks += shard_ticks_count[s];
         }
         metrics.end_time = std::chrono::steady_clock::now();
 
@@ -231,7 +235,7 @@ int main(int argc, char** argv) {
         report.ticks_per_sec = tps;
         report.orders_per_sec = ops;
 
-        const std::string version = "opt_v4_0_parallel_sharded_replay";
+        const std::string version = "opt_v4_1_parallel_persistent_workers";
         print_and_save_bench_result(report, N, version);
         return 0;
     }
