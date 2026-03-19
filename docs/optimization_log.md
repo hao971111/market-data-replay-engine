@@ -109,3 +109,18 @@
 - Observation: parallel persistent workers improved throughput by only ~38% vs the single-thread baseline.
 - Cause: shard distribution on the current benchmark input was highly imbalanced (`75000 / 25000 / 0 / 0`), so only part of the workers received useful work.
 - Next: use a more balanced multi-symbol dataset for parallel scaling evaluation.
+
+## 2026-03-19 - Parallel Scaling on Balanced Input
+
+- Setup: switched parallel benchmark input to a balanced 4-symbol dataset and measured scaling with `1 / 2 / 4` shards.
+- Result: `1-shard` baseline was stable around `7.7e8` ticks/sec; `4-shard` runs mostly reached `3.2e9 ~ 3.3e9` ticks/sec, close to linear scaling on balanced input.
+- Observation: `2-shard` runs showed large variance on Windows and were less stable than `1-shard` and `4-shard`.
+- Conclusion: the parallel replay model itself scales well under balanced workload; earlier low speedup was mainly caused by shard imbalance in the original input.
+- Next: re-run `1 / 2 / 4` scaling on Linux and check scheduling-related metrics if the `2-shard` variance remains.
+
+## 2026-03-19 - Parallel Scaling Validation
+
+- Windows balanced-input runs showed that the parallel model scaled, but 2-shard and 4-shard results still had noticeable variance.
+- A Windows affinity experiment reduced some variance (especially for 2-shard), suggesting scheduler / CPU migration noise affected benchmark stability.
+- On a 4-vCPU Linux VM, balanced-input scaling became much clearer: `1-shard ~4.6e8`, `2-shard ~9.6e8`, `4-shard ~1.9e9` ticks/sec, close to linear scaling.
+- Conclusion: the sharded persistent-worker design scales well under balanced workload; earlier instability was largely caused by workload imbalance and platform scheduling noise.

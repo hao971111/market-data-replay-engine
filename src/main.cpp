@@ -194,6 +194,7 @@ int main(int argc, char** argv) {
         
         for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
             threads.emplace_back([&, s]() {
+                
                 Portfolio port(100000);
                 MatchingEngine sink(port);
                 FastCountingStrategy cs;
@@ -238,7 +239,7 @@ int main(int argc, char** argv) {
         report.ticks_per_sec = tps;
         report.orders_per_sec = ops;
 
-        const std::string version = "opt_v4_1_parallel_persistent_workers";
+        const std::string version = "opt_v4_3_affinity_4shard";
         print_and_save_bench_result(report, N, version);
         return 0;
     }
