@@ -124,3 +124,12 @@
 - A Windows affinity experiment reduced some variance (especially for 2-shard), suggesting scheduler / CPU migration noise affected benchmark stability.
 - On a 4-vCPU Linux VM, balanced-input scaling became much clearer: `1-shard ~4.6e8`, `2-shard ~9.6e8`, `4-shard ~1.9e9` ticks/sec, close to linear scaling.
 - Conclusion: the sharded persistent-worker design scales well under balanced workload; earlier instability was largely caused by workload imbalance and platform scheduling noise.
+
+## 2026-03-20 - Opt #13 (preallocate portfolio capacity)
+
+- Preallocated `Portfolio` storage before replay and removed per-tick capacity check from `update_to_market()`.
+- `perf` motivation: `Portfolio::update_to_market()` / `ensure_symbol_capacity()` were major hot spots.
+- Linux VM benchmark (`opt_v4_6_linux_vm_remove_update_capacity_check_4shard`, 5 runs): median `ticks_per_sec` improved from `1.889e9` to `2.480e9` (**~+31.3%**).
+- Windows dev-machine note: median `ticks_per_sec` also improved from `3.278e9` to `3.516e9` (**~+7.2%**).
+- Going forward, Linux VM is the formal benchmark baseline; Windows runs are for quick development validation only.
+- Next: re-profile the new Linux baseline.

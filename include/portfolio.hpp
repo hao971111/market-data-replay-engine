@@ -10,6 +10,11 @@ class Portfolio {
 public:
     explicit Portfolio(double initial_cash) : cash_(initial_cash) {}
     
+    void init_symbol_capacity(std::size_t count) {
+        position_.resize(count);
+        last_price_.resize(count);
+    }
+
     void ensure_symbol_capacity(uint32_t symbol_id) {
         if(symbol_id >= position_.size()) {
             position_.resize(symbol_id + 1);
@@ -63,7 +68,6 @@ public:
         }
     }
     void update_to_market(uint32_t symbol_id, double price) {
-        ensure_symbol_capacity(symbol_id);
         last_price_[symbol_id] = price;
     }
     double equity() const {

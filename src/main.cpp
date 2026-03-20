@@ -158,6 +158,16 @@ std::vector<std::vector<Tick>> partition_ticks_by_symbol(const std::vector<Tick>
     return shard_ticks;
 }
 
+std::size_t compute_symbol_count(const std::vector<Tick>& ticks) {
+    uint32_t max_id = 0;
+    for (const Tick& t : ticks) {
+        if (t.symbol_id > max_id) {
+            max_id = t.symbol_id;
+        }
+    }
+    return static_cast<std::size_t>(max_id) + 1;
+}
+
 int main(int argc, char** argv) {
     SymbolTable symbol_table;
     std::vector<Tick> ticks;
@@ -184,6 +194,7 @@ int main(int argc, char** argv) {
 
         ticks = prepare_bench_ticks(symbol_table);
         auto shard_ticks = partition_ticks_by_symbol(ticks, shard_count);
+        const std::size_t symbol_count = compute_symbol_count(ticks);
         if(ticks.empty()) {
             return 1;
         }
@@ -192,13 +203,13 @@ int main(int argc, char** argv) {
 
         metrics.start_time = std::chrono::steady_clock::now();
         const int N = std::max<int>(1, TARGET_TOTAL_EVENTS / static_cast<int>(ticks.size()));
-
         ParallelReplayResult result = RunParallelReplay(
             shard_ticks,
             N,
-            [](const std::vector<Tick>& shard, int iterations) -> ParallelReplayResult {
+            [symbol_count](const std::vector<Tick>& shard, int iterations) -> ParallelReplayResult {
                 ReplayEngine replay_engine;
                 Portfolio portfolio(100000);
+                portfolio.init_symbol_capacity(symbol_count);
                 MatchingEngine matching_engine(portfolio);
                 FastCountingStrategy strategy;
         
@@ -231,7 +242,7 @@ int main(int argc, char** argv) {
         report.ticks_per_sec = tps;
         report.orders_per_sec = ops;
 
-        const std::string version = "opt_v4_5_param_shards_2";
+        const std::string version = "opt_v4_6_remove_update_capacity_check";
         print_and_save_bench_result(report, N, version);
         return 0;
     }
@@ -262,7 +273,7 @@ int main(int argc, char** argv) {
     double ops = seconds > 0 ? (static_cast<double>(tr) / seconds) : 0.0;
 
     report.ticks = t;
-    report.orders = tr;   // 现在你的模型里 order==trade
+    report.orders = tr;   
     report.trades = tr;
     report.initial_cash = initial_cash;
     report.final_equity = port.equity();
