@@ -19,7 +19,7 @@
 #include "matching_engine.hpp"
 #include "metrics.hpp"
 #include "tick.hpp"
-#include <thread>
+#include "parallel_replay_executor.hpp"
 
 const int TARGET_TOTAL_EVENTS = 1000000000;
 class CountingStrategy : public Strategy {
@@ -177,8 +177,13 @@ int main(int argc, char** argv) {
 
     if (bench) {
 
+        int shard_count = 4;
+        if (argc >= 3) {
+            shard_count = std::max(1, std::stoi(argv[2]));
+        }
+
         ticks = prepare_bench_ticks(symbol_table);
-        auto shard_ticks = partition_ticks_by_symbol(ticks, 4);
+        auto shard_ticks = partition_ticks_by_symbol(ticks, shard_count);
         if(ticks.empty()) {
             return 1;
         }
@@ -188,42 +193,29 @@ int main(int argc, char** argv) {
         metrics.start_time = std::chrono::steady_clock::now();
         const int N = std::max<int>(1, TARGET_TOTAL_EVENTS / static_cast<int>(ticks.size()));
 
-        std::vector<std::thread> threads;
-        std::vector<uint64_t> shard_trades(shard_ticks.size(), 0);
-        std::vector<uint64_t> shard_ticks_count(shard_ticks.size(), 0);
+        ParallelReplayResult result = RunParallelReplay(
+            shard_ticks,
+            N,
+            [](const std::vector<Tick>& shard, int iterations) -> ParallelReplayResult {
+                ReplayEngine replay_engine;
+                Portfolio portfolio(100000);
+                MatchingEngine matching_engine(portfolio);
+                FastCountingStrategy strategy;
         
-        for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
-            threads.emplace_back([&, s]() {
-                
-                Portfolio port(100000);
-                MatchingEngine sink(port);
-                FastCountingStrategy cs;
+                ParallelReplayResult r;
+                for (int i = 0; i < iterations; ++i) {
+                    std::uint64_t before = matching_engine.size();
+                    replay_engine.run_fast(shard, strategy, matching_engine, portfolio);
+                    std::uint64_t after = matching_engine.size();
         
-                uint64_t local_trades = 0;
-                uint64_t local_ticks = 0;
-        
-                for (int i = 0; i < N; ++i) {
-                    uint64_t before = sink.size();
-                    re.run_fast(shard_ticks[s], cs, sink, port);
-                    uint64_t after = sink.size();
-        
-                    local_trades += (after - before);
-                    local_ticks += shard_ticks[s].size();
+                    r.total_ticks += shard.size();
+                    r.total_trades += (after - before);
                 }
-        
-                shard_trades[s] = local_trades;
-                shard_ticks_count[s] = local_ticks;
-            });
-        }
-        
-        for (auto& t : threads) {
-            t.join();
-        }
-        
-        for (std::size_t s = 0; s < shard_ticks.size(); ++s) {
-            total_trades += shard_trades[s];
-            total_ticks += shard_ticks_count[s];
-        }
+                return r;
+            }
+        );
+        total_ticks = result.total_ticks;
+        total_trades = result.total_trades;
         metrics.end_time = std::chrono::steady_clock::now();
 
         auto duration = metrics.end_time - metrics.start_time;
@@ -239,7 +231,7 @@ int main(int argc, char** argv) {
         report.ticks_per_sec = tps;
         report.orders_per_sec = ops;
 
-        const std::string version = "opt_v4_3_affinity_4shard";
+        const std::string version = "opt_v4_5_param_shards_2";
         print_and_save_bench_result(report, N, version);
         return 0;
     }
