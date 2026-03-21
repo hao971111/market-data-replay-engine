@@ -133,3 +133,10 @@
 - Windows dev-machine note: median `ticks_per_sec` also improved from `3.278e9` to `3.516e9` (**~+7.2%**).
 - Going forward, Linux VM is the formal benchmark baseline; Windows runs are for quick development validation only.
 - Next: re-profile the new Linux baseline.
+
+
+## 2026-03-21 - Opt #14 (remove order_fill capacity check)
+
+- Removed per-order `ensure_symbol_capacity()` from `Portfolio::on_order_fill()` after portfolio capacity was already preallocated before replay.
+- Linux VM benchmark (`opt_v4_7_linux_vm_remove_order_fill_capacity_check_4shard`, 5 runs): median `ticks_per_sec` improved from `2.489e9` to `2.646e9` (**~+6.3%**).
+- Next: re-profile the new Linux baseline.

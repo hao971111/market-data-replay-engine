@@ -53,7 +53,6 @@ public:
         }
     }
     void on_order_fill(const Order& order) {
-        ensure_symbol_capacity(order.symbol_id);
         switch (order.side) {
             case SideState::BUY:
                 position_[order.symbol_id] += order.quantity;
