@@ -50,23 +50,6 @@ public:
 };
 
 
-class FastCountingStrategy {
-public:
-    int count = 0;
-    void on_tick(const Tick& tick, MatchingEngine& sink) {
-        count++;
-        if (count % 2 == 0) {
-            Order order;
-            order.timestamp_us = tick.timestamp_us;
-            order.symbol_id = tick.symbol_id;
-            order.side = SideState::BUY;
-            order.quantity = 1;
-            order.price = tick.price;
-            sink.on_order(order);
-        }
-    }
-};
-
 std::vector<Tick> prepare_bench_ticks(SymbolTable& symbol_table) {
     std::vector<Tick> base_ticks;
     std::vector<Tick> ticks;
@@ -149,15 +132,6 @@ void print_and_save_bench_result(const BacktestReport& report, int N,
     std::cout << "Benchmark results appended to " << filename << std::endl;
 }
 
-std::vector<std::vector<Tick>> partition_ticks_by_symbol(const std::vector<Tick>& ticks, int shard_count) {
-    std::vector<std::vector<Tick>> shard_ticks(shard_count);
-    for(const Tick& t : ticks) {
-        int shard_id = t.symbol_id % shard_count;
-        shard_ticks[shard_id].push_back(t);
-    }
-    return shard_ticks;
-}
-
 std::size_t compute_symbol_count(const std::vector<Tick>& ticks) {
     uint32_t max_id = 0;
     for (const Tick& t : ticks) {
@@ -203,28 +177,14 @@ int main(int argc, char** argv) {
 
         metrics.start_time = std::chrono::steady_clock::now();
         const int N = std::max<int>(1, TARGET_TOTAL_EVENTS / static_cast<int>(ticks.size()));
-        ParallelReplayResult result = RunParallelReplay(
-            shard_ticks,
-            N,
-            [symbol_count](const std::vector<Tick>& shard, int iterations) -> ParallelReplayResult {
-                ReplayEngine replay_engine;
-                Portfolio portfolio(100000);
-                portfolio.init_symbol_capacity(symbol_count);
-                MatchingEngine matching_engine(portfolio);
-                FastCountingStrategy strategy;
         
-                ParallelReplayResult r;
-                for (int i = 0; i < iterations; ++i) {
-                    std::uint64_t before = matching_engine.size();
-                    replay_engine.run_fast(shard, strategy, matching_engine, portfolio);
-                    std::uint64_t after = matching_engine.size();
-        
-                    r.total_ticks += shard.size();
-                    r.total_trades += (after - before);
-                }
-                return r;
-            }
-        );
+        ParallelBenchConfig config;
+        config.iterations = N;
+        config.symbol_count = symbol_count;
+        config.initial_cash = 100000.0;
+
+        ParallelReplayResult result = run_parallel_bench(shard_ticks, config);
+
         total_ticks = result.total_ticks;
         total_trades = result.total_trades;
         metrics.end_time = std::chrono::steady_clock::now();

@@ -10,8 +10,14 @@ struct ParallelReplayResult {
     std::uint64_t total_trades = 0;
 };
 
+struct ParallelBenchConfig {
+    int iterations = 1;
+    std::size_t symbol_count = 0;
+    double initial_cash = 100000.0;
+};
+
 template <typename ShardRunner>
-ParallelReplayResult RunParallelReplay(
+ParallelReplayResult run_parallel_replay(
     const std::vector<std::vector<Tick>>& shard_ticks,
     int iterations,
     ShardRunner&& run_shard
@@ -36,3 +42,13 @@ ParallelReplayResult RunParallelReplay(
     }
     return result;
 }
+
+std::vector<std::vector<Tick>> partition_ticks_by_symbol(
+    const std::vector<Tick>& ticks,
+    int shard_count
+);
+
+ParallelReplayResult run_parallel_bench(
+    const std::vector<std::vector<Tick>>& shard_ticks,
+    const ParallelBenchConfig& config
+);

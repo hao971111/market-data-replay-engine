@@ -140,3 +140,10 @@
 - Removed per-order `ensure_symbol_capacity()` from `Portfolio::on_order_fill()` after portfolio capacity was already preallocated before replay.
 - Linux VM benchmark (`opt_v4_7_linux_vm_remove_order_fill_capacity_check_4shard`, 5 runs): median `ticks_per_sec` improved from `2.489e9` to `2.646e9` (**~+6.3%**).
 - Next: re-profile the new Linux baseline.
+
+## 2026-03-21 - Refactor (extract parallel bench executor)
+
+- Extracted parallel benchmark execution from `main.cpp` into `parallel_replay_executor`.
+- This is a structural refactor, not a new optimization baseline.
+- Current Linux VM runs stayed in a similar range with a small regression (~`-6%`).
+- Next: continue profiling from the current Linux VM benchmark path.

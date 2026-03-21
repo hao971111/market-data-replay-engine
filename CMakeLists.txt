@@ -10,6 +10,7 @@ add_executable(replay
     src/market_data_loader.cpp
     src/replay_engine.cpp
     src/matching_engine.cpp
+    src/parallel_replay_executor.cpp
 )
 
 target_include_directories(replay PRIVATE include)
