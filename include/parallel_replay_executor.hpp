@@ -8,6 +8,8 @@
 struct ParallelReplayResult {
     std::uint64_t total_ticks = 0;
     std::uint64_t total_trades = 0;
+    double cash = 0.0;
+    std::vector<int64_t> positions;
 };
 
 struct ParallelBenchConfig {
@@ -37,8 +39,15 @@ ParallelReplayResult run_parallel_replay(
 
     ParallelReplayResult result;
     for (const auto& r : shard_results) {
-        result.total_ticks += r.total_ticks;
-        result.total_trades += r.total_trades;
+      result.total_ticks += r.total_ticks;
+      result.total_trades += r.total_trades;
+      result.cash += r.cash;
+      if (result.positions.empty()) {
+          result.positions.resize(r.positions.size(), 0);
+      }
+      for (std::size_t i = 0; i < r.positions.size(); ++i) {
+          result.positions[i] += r.positions[i];
+      }
     }
     return result;
 }
