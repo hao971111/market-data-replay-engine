@@ -147,3 +147,12 @@
 - This is a structural refactor, not a new optimization baseline.
 - Current Linux VM runs stayed in a similar range with a small regression (~`-6%`).
 - Next: continue profiling from the current Linux VM benchmark path.
+
+
+## 2026-03-24 - Parallel scaling check (`perf stat`, Linux VM)
+
+- Measured `1 / 2 / 4` shard runs with `perf stat -e task-clock,context-switches,cpu-migrations,page-faults`.
+- `CPUs utilized` scaled from ~`1.0` to ~`2.0` to ~`3.8`, consistent with healthy parallel utilization on the current 4-vCPU Linux VM.
+- `ticks_per_sec` scaled from ~`7e8` to ~`1.5e9` to ~`2.9e9`, close to linear at this stage.
+- No significant context-switch or CPU-migration noise was observed in these runs.
+- Page-fault counts were low and stable across runs, suggesting paging was not a dominant factor in the current VM setup.

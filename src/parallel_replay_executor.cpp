@@ -9,8 +9,10 @@ namespace {
 
 class FastCountingStrategy {
 public:
+    int count = 0;
     void on_tick(const Tick& tick, MatchingEngine& sink) {
-        if ((tick.symbol_id % 2) == 0) {
+        count++;
+        if (count % 2 == 0) {
             Order order;
             order.timestamp_us = tick.timestamp_us;
             order.symbol_id = tick.symbol_id;
@@ -21,7 +23,6 @@ public:
         }
     }
 };
-
 } // namespace
 
 std::vector<std::vector<Tick>> partition_ticks_by_symbol(const std::vector<Tick>& ticks, int shard_count

@@ -73,7 +73,7 @@ ctest --test-dir build --output-on-failure
 ### Linux
 
 ```bash
-make -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j
 ctest --test-dir build --output-on-failure
 ```
