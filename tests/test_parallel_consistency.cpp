@@ -80,7 +80,7 @@ RunResult run_single_thread_result(const std::vector<Tick>& ticks, std::size_t s
 
 }  // namespace
 
-TEST(parallel_consistency, DISABLED_trade_count_matches_single_thread) {
+TEST(parallel_consistency, trade_count_matches_single_thread) {
     const std::vector<Tick> ticks = make_test_ticks();
     const std::size_t symbol_count = compute_symbol_count(ticks);
 
@@ -94,7 +94,7 @@ TEST(parallel_consistency, DISABLED_trade_count_matches_single_thread) {
         config.symbol_count = symbol_count;
         config.initial_cash = 0.0;
 
-        ParallelReplayResult result = run_parallel_bench(shard_ticks, config);
+        ParallelReplayResult result = run_parallel_bench<TestStrategy>(shard_ticks, config);
 
         EXPECT_EQ(result.total_ticks, ticks.size());
         EXPECT_EQ(result.total_trades, single_result.trades);

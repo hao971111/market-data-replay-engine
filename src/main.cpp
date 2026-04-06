@@ -183,7 +183,8 @@ int main(int argc, char** argv) {
         config.symbol_count = symbol_count;
         config.initial_cash = 100000.0;
 
-        ParallelReplayResult result = run_parallel_bench(shard_ticks, config);
+        ParallelReplayResult result =
+            run_parallel_bench<bench_strategies::FastCountingStrategy>(shard_ticks, config);
 
         total_ticks = result.total_ticks;
         total_trades = result.total_trades;
@@ -216,6 +217,7 @@ int main(int argc, char** argv) {
     }
     const double initial_cash = 100000.0;
     Portfolio port(initial_cash);
+    port.init_symbol_capacity(compute_symbol_count(ticks));
     MatchingEngine sink(port);
     CountingStrategy cs;
 

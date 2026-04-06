@@ -9,7 +9,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_library(replay_core
     src/market_data_loader.cpp
     src/replay_engine.cpp
-    src/matching_engine.cpp
     src/parallel_replay_executor.cpp
 )
 
